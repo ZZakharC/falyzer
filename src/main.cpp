@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
                 sortSettings.type = falyzer::SortType::LINES;
             else // Неопределено
             {
-                std::cerr << locale->warn_unknown_method;
+                std::cerr << COLOR_YELLOW << locale->warn_unknown_method << COLOR_RESET << std::endl;
                 continue;
             }
 
@@ -107,14 +107,14 @@ int main(int argc, char *argv[])
             else if (mode == "1") // Возрастание
                 sortSettings.isBigEnd = true;
             else                  // Неопределено
-                std::cerr << locale->warn_unknown_mode;
+                std::cerr << COLOR_YELLOW << locale->warn_unknown_mode << COLOR_RESET << std::endl;
         }
     }
 
     // Проверка настроек
     if (sortSettings.type == falyzer::SortType::LINES && !countLines)
     {
-        std::cerr << locale->warn_lines_method;
+        std::cerr << COLOR_YELLOW << locale->warn_lines_method << COLOR_RESET;
         sortSettings.type = falyzer::SortType::PERCENT;
         sortSettings.isBigEnd = 0;
     }

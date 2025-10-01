@@ -19,6 +19,7 @@
 #include <sstream>
 #include "../include/FileAnalyzer.hpp"
 #include "../include/PrintUtils.hpp"
+#include "../include/color_terminal.h"
 
 namespace fs = std::filesystem;
 
@@ -49,12 +50,13 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
     // Проверка директории
     if (!fs::exists(folder) || !fs::is_directory(folder))
     {
-        std::cerr << locale->err_folder;
+        std::cerr << COLOR_RED << locale->err_folder << COLOR_RESET << std::endl;
         return;
     }
 
     // Список расширений файлов
-    static const std::unordered_map<std::string, std::string> extensions = {
+    static const std::unordered_map<std::string, std::string> extensions =
+    {
         // ЯП
         {".hpp", "C++"}, {".cpp", "C++"}, {".cc", "C++"}, {".cxx", "C++"},
         {".hh", "C++"}, {".hxx", "C++"}, {".c++", "C++"}, {".h++", "C++"},
@@ -135,7 +137,6 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
         {
             if (entry.is_directory()) continue;
             if (!includeHidden && isHiddenPath(entry.path())) continue;
-            if (logs) std::cout << entry.path() << std::endl;
 
             // Расширения файла
             std::string ext = entry.path().extension().string(); // Расширения
@@ -146,20 +147,23 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
             std::string type = extensions.count(ext) ? extensions.at(ext) : "Other"; // Тип
 
             // Увелечения общих значений
-            totalFiles++;                                               // Количество файлов
-            totalSize += fs::file_size(entry.path());                   // Размер
+            totalFiles++;                                                    // Количество файлов
+            totalSize += fs::file_size(entry.path());                      // Размер
             if (countLines) totalLines += countFileLines(entry.path()); // Строки
             
             // Увелечения индивидуальных значений
             fileCounts[type]++;
             sizeCounts[type] += fs::file_size(entry.path());
             if (countLines) lineCounts[type] += countFileLines(entry.path());
+
+            // Вывод лога
+            if (logs) std::cout << entry.path() << std::endl;
         }
         // Обработка ошибок
         catch (const fs::filesystem_error &e)
         {
-            std::cerr << locale->warn_failed_process
-                      << entry.path() << " (" << e.what() << ")\n";
+            std::cerr << COLOR_YELLOW << locale->warn_failed_process
+                      << entry.path() << " (" << e.what() << ")\n" << COLOR_RESET;
             continue;
         }
     }
@@ -167,7 +171,7 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
     // Проверка существования файлов в директории
     if (totalFiles == 0)
     {
-        std::cout << locale->no_file_in_folder;
+        std::cerr << COLOR_BOLD << locale->no_file_in_folder << COLOR_RESET << std::endl;
         return;
     }
 
