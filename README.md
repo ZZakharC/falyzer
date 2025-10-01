@@ -36,10 +36,10 @@ It helps quickly extract useful information, automate processing, and integrate 
 ## 🖥️ Usage
 
 ```bash
-falyzer --path=<folder_path> [-h | --help] [-a] [-l] [-s] [--logs] 
+falyzer --path=<folder_path> [keys]
 ```
 
-### Flags
+### Flags (keys)
 
 - `-h` or `--help` — Displays the list of flags.
 - `-a` — Includes hidden files in statistics.
@@ -127,10 +127,10 @@ falyzer --path=<folder_path> [-h | --help] [-a] [-l] [-s] [--logs]
 
 ## 🖥️Использования
 ```bash
-falyzer --path=<путь_к_папке> [-h | --help] [-a] [-l] [-s] [--logs] 
+falyzer --path=<путь_к_папке> [ключи]
 ```
 
-### Флаги
+### Флаги (ключи)
 - `-h` или `--help` - Выводит список флагов.
 - `-a` - Включает в статистику скрытые файлы.
 - `-l` - Включает счёт строк в файлах (может сильно замедлить программу).
@@ -179,3 +179,4 @@ falyzer --path=<путь_к_папке> [-h | --help] [-a] [-l] [-s] [--logs]
     ./build/build.sh
 3. **Готово**  
   Теперь исполняемый файл находится `build/bin/falyzer`.
+  
