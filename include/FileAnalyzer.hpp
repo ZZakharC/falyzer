@@ -11,7 +11,9 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "color_terminal.h"
 #include <unordered_map>
+#include "locale.hpp"
 
 namespace falyzer {
     // Тип сортировки

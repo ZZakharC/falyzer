@@ -46,66 +46,70 @@ void printAnalysis(const std::string &folder, const unsigned long totalFiles,
                    const falyzer::SortSettings sortSettings,
                    bool countLines, bool separator)
 {
-    // Проверка существования файлов в директории
-    if (totalFiles == 0)
-    {
-        std::cout << "В указанной папке нет файлов.\n";
-        return;
-    }
-
     // Получения спец цвета для типа файла
     auto getColor = [](const std::string &type) -> std::string
     {
         if (type == "Binary" || type == "Object" || type == "Text" ||
             type == "Image" || type == "Video" || type == "Document" || type == "Archive")
-            return "\033[1;36m";
+            return COLOR_CYAN;
         if (type == "Other")
-            return "\033[1;90m";
-        return "\033[1;33m";
+            return COLOR_GRAY;
+        return COLOR_YELLOW;
     };
 
     auto sortIndicator = [](const falyzer::SortSettings &sortSettings)
     {
-        char ch = sortSettings.isBigEnd ? '^' : 'v';
+        // Проверка режима сортировки
+        char ch = sortSettings.isBigEnd ? '^' : 'v'; // Индикатор
+
+        // Проверка метода сортировки
         switch (sortSettings.type)
         {
-            case falyzer::SortType::NAME:
+            case falyzer::SortType::NAME:    // Названия типа
                 std::cout << "\033[13G";
                 break;
-            case falyzer::SortType::PERCENT:
+            case falyzer::SortType::PERCENT: // Процент
                 std::cout << "\033[24G";
                 break;
-            case falyzer::SortType::COUNT:
-                std::cout << "\033[37G";
+            case falyzer::SortType::COUNT:   // Количество
+                std::cout << (locale == &ru_locale ? "\033[37G" : "\033[36G"); // Проверка на локаль из-за разной длины слов
                 break;
-            case falyzer::SortType::SIZE:
-                std::cout << "\033[48G";
+            case falyzer::SortType::SIZE:   // Размер
+                std::cout << (locale == &ru_locale ? "\033[48G" : "\033[47G"); // Проверка на локаль из-за разной длины слов
                 break;
-            case falyzer::SortType::LINES:
+            case falyzer::SortType::LINES:  // Строки
                 std::cout << "\033[61G";
                 break;
         }
-        std::cout << "\033[1;36m" << ch << "\033[0m\n";
+
+        // Вывод индикатора
+        std::cout << COLOR_BOLD << COLOR_CYAN << ch << '\n' << COLOR_RESET;
     };
 
-    std::cout << "\n\033[37mАнализ файлов в папке: \033[1;35m" << folder << "\033[0;37m\n";
-    std::cout << "Всего файлов в директории: \033[1;34m" << totalFiles << "\033[0;37m\n";
-    std::cout << "Общий размер всех файлов: \033[1;34m" << formatSize(totalSize) << "\033[0;37m\n";
+    // Вывод общей информации
+    std::cout << '\n'
+    /// Папка
+              << locale->analysis_in_folder_text << ' ' << COLOR_BOLD << COLOR_MAGENTA << folder << '\n' << COLOR_RESET
+    /// Количество файлов
+              << locale->total_files_text << ' ' << COLOR_BOLD << COLOR_BLUE << totalFiles << '\n' << COLOR_RESET
+    /// Размер файлов
+              << locale->total_size_files_text << ' ' << COLOR_BOLD << COLOR_GREEN << formatSize(totalSize) << '\n' << COLOR_RESET;
+    /// Строки в файлах
     if (countLines) // Включен подсчёт строк
-        std::cout << "Всего строк во всех файлах: \033[34m" << totalLines << "\033[0;37m\n";
+        std::cout << locale->total_lines_text << ' ' << COLOR_BOLD << COLOR_GRAY << totalLines << '\n' << COLOR_RESET;
     std::cout << "\n";
 
     // Заголовок таблицы
     if (countLines) // Включен подсчёт строк
     {
         std::cout << "╔═════════════╦═════════╦════════════╦════════════╦════════════╗\n";
-        std::cout << "║  Тип файла  ║ Процент ║ Количество ║   Размер   ║   Строки   ║"; sortIndicator(sortSettings);
+        std::cout << locale->table_header << locale->table_header_lines_text; sortIndicator(sortSettings);
         std::cout << "╠═════════════╬═════════╬════════════╬════════════╬════════════╣\n";
     }
     else
     {
         std::cout << "╔═════════════╦═════════╦════════════╦════════════╗\n";
-        std::cout << "║  Тип файла  ║ Процент ║ Количество ║   Размер   ║"; sortIndicator(sortSettings);
+        std::cout << locale->table_header; sortIndicator(sortSettings);
         std::cout << "╠═════════════╬═════════╬════════════╬════════════╣\n";
     }
 
@@ -114,26 +118,40 @@ void printAnalysis(const std::string &folder, const unsigned long totalFiles,
     {
         // Получения цвета
         std::string color = getColor(type);
+        
+        // Вывод
+        /// Тип файла
+        std::cout << "║ "
+                  << COLOR_BOLD << color << type << COLOR_RESET
+                  << "\033[14G"
 
-        // Тип
-        std::cout << "║ " << color << type << "\033[0m\033[14G"
-        // Процент
-        << " ║\033[34m ";
-        if (percent < 0.01) // Если 0,00...
+        /// Процент
+                  << " ║ " << COLOR_BLUE;
+        if (percent < 0.01) // Если меньше 0,01
             std::cout << " <0.01";
-        else                // Минимум 0.01
-            std::cout << std::setw(6) << std::fixed << std::setprecision(2) << percent;
-        
-        std::cout << "%\033[0m"
-        // Количество
-        << " ║\033[35m" << std::setw(11) << fileCounts.at(type) << "\033[0m"
-        // Размер
-        << " ║\033[32m" << std::setw(11) << formatSize(sizeCounts.at(type)) << "\033[0m";
-            
-        // Вывод строк
-        if (countLines) // Включен подсчёт строк
-            std::cout << " ║\033[90m" << std::setw(11) << (lineCounts.at(type) + 1) << "\033[0m";
-        
+        else
+            std::cout << std::setw(6)
+                      << std::fixed << std::setprecision(2)
+                      << percent;
+        std::cout << '%' << COLOR_RESET
+
+        /// Количество
+                  << " ║" << COLOR_MAGENTA
+                  << std::setw(11) << fileCounts.at(type)
+                  << COLOR_RESET
+
+        /// Размер
+                  << " ║" << COLOR_GREEN
+                  << std::setw(11) << formatSize(sizeCounts.at(type))
+                  << COLOR_RESET;
+
+        /// Строки (если включено)
+        if (countLines)
+            std::cout << " ║" << COLOR_GRAY
+                      << std::setw(11) << (lineCounts.at(type) + 1)
+                      << COLOR_RESET;
+                
+        /// Закрытия строки
         std::cout << " ║\n";
 
         // Вывод разделителя

@@ -11,18 +11,23 @@
 #include <iostream>
 #include <ostream>
 #include "../include/FileAnalyzer.hpp"
+#include "../include/locale.hpp"
 
 // Главная функция
 int main(int argc, char *argv[])
 {
+    // Автоматическая установка языка интерфейса
+    set_lang("auto");
+
     // Проверка наличия аргументов
     if (argc < 2)
     {
-        std::cerr << "Использование: " << argv[0] << " <путь_к_папке> [-h | --help] [-a] [-l] [-s] [--logs] [--sort=<метод>-<режим>]\n" 
-                  << argv[0] << " -h для помощи." << std::endl;
+        std::cerr << locale->usage_text << argv[0] << ' ' << locale->usage << '\n'
+                  << argv[0] << locale->for_help << std::endl;
         return 1;
     }
 
+    std::string path_folder;                   // Путь к папке
     bool includeHidden = false,                // Считывать скрытые файлы?
          countLines = false,                   // Считать строки?
          logs = false,                         // ВЫводить логи?
@@ -35,35 +40,14 @@ int main(int argc, char *argv[])
     {
         std::string flag = argv[i]; // флаг
 
+        // Вывод помощи
         if (flag=="-h"||flag=="--help")
         {
-            std::cout << "Использование: <путь_к_папке> [ключи]\n\n"
-
-            << "Ключи(флаги):\n"
-            << "  [-h | --help]              Выводит список флагов.\n\n"
-            << "  [-a]                       Включает в статистику скрытые файлы.\n\n"
-            << "  [-l]                       Включает счёт строк в файлах (может сильно замедлить программу).\n\n"
-            << "  [-s]                       Добавляет разделители в выводимую таблицу.\n\n"
-            << "  [--logs]                   Выводит логи.\n\n"
-            << "  [--sort=<метод>-<режим>]   Настройка сортировки результатов. По умолчанию используется `percent-0`.\n"
-
-            << "    Методы сортировки (<метод>):\n"
-            << "      name      по имени типа файлов (алфавитно)\n"
-            << "      percent   по проценту количества относительно общего числа файлов\n"
-            << "      count     по количеству файлов\n"
-            << "      size      по общему размеру файлов данного типа\n"
-            << "      lines     по числу строк (требует флаг -l)\n\n"
-   
-            << "    Режимы сортировки (<режим>):\n"
-            << "      0         по убыванию (от большего к меньшему)\n"
-            << "      1         по возрастанию (от меньшего к большему)" << std::endl;
-
+            std::cout << locale->usage_text << locale->usage << "\n\n"
+                      << locale->help << std::endl;
             return 0;
         }
-        // Пропуск если первый аргумент не -h. Потому что это либо путь или -h
-        else if (i == 1)
-            continue;
-
+        
         // Скрытые файлы
         if (flag == "-a") includeHidden = true;
         // Подсчёт строк
@@ -72,6 +56,12 @@ int main(int argc, char *argv[])
         else if (flag == "--logs") logs = true;
         // Разделитель
         else if (flag == "-s") separator = true;
+        // Язык
+        else if (flag.rfind("--lang=", 0) == 0)
+            set_lang(flag.substr(7));
+        // Путь к папке для анализа
+        else if (flag.rfind("--path=", 0) == 0)
+            path_folder = flag.substr(7);
         // Сортировка
         else if (flag.rfind("--sort=", 0) == 0) 
         { 
@@ -105,8 +95,7 @@ int main(int argc, char *argv[])
                 sortSettings.type = falyzer::SortType::LINES;
             else // Неопределено
             {
-                std::cerr << "[WARN] Неизвестный метод сортировки: " << method 
-                        << ". Используется percent-0 по умолчанию.\n";
+                std::cerr << locale->warn_unknown_method;
                 continue;
             }
 
@@ -118,15 +107,14 @@ int main(int argc, char *argv[])
             else if (mode == "1") // Возрастание
                 sortSettings.isBigEnd = true;
             else                  // Неопределено
-                std::cerr << "[WARN] Неизвестный режим сортировки: " << mode 
-                        << ". Используется 0 (убывание) по умолчанию.\n";
+                std::cerr << locale->warn_unknown_mode;
         }
     }
 
     // Проверка настроек
     if (sortSettings.type == falyzer::SortType::LINES && !countLines)
     {
-        std::cerr << "[WARN] Подсчёт строк отключён их сортировка невозможна! Используется percent-0 по умолчанию.\n";
+        std::cerr << locale->warn_lines_method;
         sortSettings.type = falyzer::SortType::PERCENT;
         sortSettings.isBigEnd = 0;
     }
@@ -134,6 +122,7 @@ int main(int argc, char *argv[])
     // Вывод логов
     if (logs)
         std::cout << "Setting:\n"
+                  << " path folder: '" << path_folder << "'\n"
                   << " includeHidden: " << includeHidden << '\n'
                   << " countLines: " << countLines << '\n'
                   << " separator: " << separator << '\n'
@@ -141,7 +130,7 @@ int main(int argc, char *argv[])
                   << std::endl;
 
     // Аналитика
-    analyticsFiles(argv[1], includeHidden, countLines, separator, logs, sortSettings);
+    analyticsFiles(path_folder, includeHidden, countLines, separator, logs, sortSettings);
 
     return 0;
 }

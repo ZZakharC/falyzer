@@ -49,7 +49,7 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
     // Проверка директории
     if (!fs::exists(folder) || !fs::is_directory(folder))
     {
-        std::cerr << "Ошибка: указанная папка не существует или это не директория.\n";
+        std::cerr << locale->err_folder;
         return;
     }
 
@@ -158,10 +158,17 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
         // Обработка ошибок
         catch (const fs::filesystem_error &e)
         {
-            std::cerr << "Предупреждение: не удалось обработать " 
+            std::cerr << locale->warn_failed_process
                       << entry.path() << " (" << e.what() << ")\n";
             continue;
         }
+    }
+
+    // Проверка существования файлов в директории
+    if (totalFiles == 0)
+    {
+        std::cout << locale->no_file_in_folder;
+        return;
     }
 
     // Сортировка

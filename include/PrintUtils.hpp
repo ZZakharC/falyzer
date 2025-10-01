@@ -13,6 +13,7 @@
 #include <vector>
 #include <unordered_map>
 #include "FileAnalyzer.hpp"
+#include "locale.hpp"
 
 /// @brief Конвертация размера
 /// @param bytes Размер в байтах
