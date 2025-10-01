@@ -25,8 +25,8 @@ std::string formatSize(unsigned long long bytes)
     // Пока размер >= 1024 и ещё есть единицы больше
     while (size >= 1024 && i < 4)
     {
-        size /= 1024;  // уменьшаем размер в 1024 раза
-        ++i;           // переходим к следующей единице (KB → MB → GB и т.д.)
+        size /= 1024;  // уменьшения размера в 1024 раза
+        ++i;           // переход к следующей единице 
     }
 
     // Форматированный вывод с двумя знаками после запятой
@@ -43,6 +43,7 @@ void printAnalysis(const std::string &folder, const unsigned long totalFiles,
                    const std::unordered_map<std::string, int> &fileCounts,
                    const std::unordered_map<std::string, int> &lineCounts,
                    const std::unordered_map<std::string, unsigned long long> &sizeCounts,
+                   const falyzer::SortSettings sortSettings,
                    bool countLines, bool separator)
 {
     // Проверка существования файлов в директории
@@ -53,13 +54,38 @@ void printAnalysis(const std::string &folder, const unsigned long totalFiles,
     }
 
     // Получения спец цвета для типа файла
-    auto getColor = [](const std::string &type) -> std::string {
+    auto getColor = [](const std::string &type) -> std::string
+    {
         if (type == "Binary" || type == "Object" || type == "Text" ||
             type == "Image" || type == "Video" || type == "Document" || type == "Archive")
             return "\033[1;36m";
         if (type == "Other")
             return "\033[1;90m";
         return "\033[1;33m";
+    };
+
+    auto sortIndicator = [](const falyzer::SortSettings &sortSettings)
+    {
+        char ch = sortSettings.isBigEnd ? '^' : 'v';
+        switch (sortSettings.type)
+        {
+            case falyzer::SortType::NAME:
+                std::cout << "\033[13G";
+                break;
+            case falyzer::SortType::PERCENT:
+                std::cout << "\033[24G";
+                break;
+            case falyzer::SortType::COUNT:
+                std::cout << "\033[37G";
+                break;
+            case falyzer::SortType::SIZE:
+                std::cout << "\033[48G";
+                break;
+            case falyzer::SortType::LINES:
+                std::cout << "\033[61G";
+                break;
+        }
+        std::cout << "\033[1;36m" << ch << "\033[0m\n";
     };
 
     std::cout << "\n\033[37mАнализ файлов в папке: \033[1;35m" << folder << "\033[0;37m\n";
@@ -73,13 +99,13 @@ void printAnalysis(const std::string &folder, const unsigned long totalFiles,
     if (countLines) // Включен подсчёт строк
     {
         std::cout << "╔═════════════╦═════════╦════════════╦════════════╦════════════╗\n";
-        std::cout << "║  Тип файла  ║ Процент ║ Количество ║   Строки   ║   Размер   ║\n";
+        std::cout << "║  Тип файла  ║ Процент ║ Количество ║   Размер   ║   Строки   ║"; sortIndicator(sortSettings);
         std::cout << "╠═════════════╬═════════╬════════════╬════════════╬════════════╣\n";
     }
     else
     {
         std::cout << "╔═════════════╦═════════╦════════════╦════════════╗\n";
-        std::cout << "║  Тип файла  ║ Процент ║ Количество ║   Размер   ║\n";
+        std::cout << "║  Тип файла  ║ Процент ║ Количество ║   Размер   ║"; sortIndicator(sortSettings);
         std::cout << "╠═════════════╬═════════╬════════════╬════════════╣\n";
     }
 
@@ -88,23 +114,33 @@ void printAnalysis(const std::string &folder, const unsigned long totalFiles,
     {
         // Получения цвета
         std::string color = getColor(type);
-        {
-            std::cout << "║ " << color << type << "\033[0;37m "
-            << "\033[15G║\033[34m " << std::setw(6) << std::fixed << std::setprecision(2) << percent << "%\033[0m"
-            << " ║\033[35m" << std::setw(11) << fileCounts.at(type) << "\033[0m";
-            
-            if (countLines) // Включен подсчёт строк
-                std::cout << " ║\033[90m" << std::setw(11) << (lineCounts.at(type) + 1)<< "\033[0m";
-            
-            std::cout << " ║" << std::setw(11) << formatSize(sizeCounts.at(type)) << " ║\n";
-        }
 
+        // Тип
+        std::cout << "║ " << color << type << "\033[0m\033[14G"
+        // Процент
+        << " ║\033[34m ";
+        if (percent < 0.01) // Если 0,00...
+            std::cout << " <0.01";
+        else                // Минимум 0.01
+            std::cout << std::setw(6) << std::fixed << std::setprecision(2) << percent;
+        
+        std::cout << "%\033[0m"
+        // Количество
+        << " ║\033[35m" << std::setw(11) << fileCounts.at(type) << "\033[0m"
+        // Размер
+        << " ║\033[32m" << std::setw(11) << formatSize(sizeCounts.at(type)) << "\033[0m";
+            
+        // Вывод строк
+        if (countLines) // Включен подсчёт строк
+            std::cout << " ║\033[90m" << std::setw(11) << (lineCounts.at(type) + 1) << "\033[0m";
+        
+        std::cout << " ║\n";
+
+        // Вывод разделителя
         if (separator) // Включен разделитель
-            std::cout << (countLines ? "╟─────────────╫─────────╫────────────╫────────────╫────────────╢\n"
-                                     : "╟─────────────╫─────────╫────────────╫────────────╢\n");
+            std::cout << "╟─────────────╫─────────╫────────────╫────────────" << (countLines ? "╫────────────╢\n" : "╢\n");
     }
 
     // Конец таблици
-    std::cout << (countLines ? "╚═════════════╩═════════╩════════════╩════════════╩════════════╝\n"
-                             : "╚═════════════╩═════════╩════════════╩════════════╝\n");
+    std::cout << "╚═════════════╩═════════╩════════════╩════════════" << (countLines ? "╩════════════╝\n" : "╝\n");
 }

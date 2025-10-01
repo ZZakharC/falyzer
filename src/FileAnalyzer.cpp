@@ -42,7 +42,7 @@ bool isHiddenPath(const fs::path &p) {
 }
 
 /// Сбор аналитики файлов
-void analyticsFiles(const std::string &folderStr, bool includeHidden, bool countLines, bool separator, bool logs)
+void analyticsFiles(const std::string &folderStr, bool includeHidden, bool countLines, bool separator, bool logs, falyzer::SortSettings sortSettings)
 {
     fs::path folder(folderStr); // Рабочая директория
 
@@ -55,6 +55,7 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
 
     // Список расширений файлов
     static const std::unordered_map<std::string, std::string> extensions = {
+        // ЯП
         {".hpp", "C++"}, {".cpp", "C++"}, {".cc", "C++"}, {".cxx", "C++"},
         {".hh", "C++"}, {".hxx", "C++"}, {".c++", "C++"}, {".h++", "C++"},
         {".java", "Java"}, {".html", "HTML"}, {".htm", "HTML"}, {".css", "CSS"},
@@ -101,22 +102,22 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
         {".tiff", "Image"}, {".webp", "Image"}, {".heic", "Image"},
         {".heif", "Image"}, {".avif", "Image"}, {".svg", "Image"},
         {".ai", "Image"}, {".cdr", "Image"}, {".eps", "Image"},
-        {".pdf", "Image"}, {".psd", "Image"}, {".xcf", "Image"},
-        {".ico", "Image"}, {".icns", "Image"}, {".zpif", "Image"},
+        {".psd", "Image"}, {".xcf", "Image"},{".ico", "Image"},
+        {".icns", "Image"}, {".zpif", "Image"},
 
         // Видео
         {".mp4", "Video"}, {".mkv", "Video"}, {".avi", "Video"},
         {".mov", "Video"}, {".wmv", "Video"}, {".flv", "Video"},
         {".webm", "Video"}, {".mpeg", "Video"}, {".mpg", "Video"},
         {".3gp", "Video"}, {".m4v", "Video"}, {".vob", "Video"},
-        {".ts", "Video"}, {".rm", "Video"}, {".rmvb", "Video"},
+        {".mts", "Video"}, {".rm", "Video"}, {".rmvb", "Video"},
         {".ogv", "Video"}, {".f4v", "Video"}, {".mxf", "Video"},
 
         // Документы
         {".doc", "Document"}, {".docx", "Document"}, {".odt", "Document"},
         {".rtf", "Document"}, {".pdf", "Document"}, {".tex", "Document"},
         {".ppt", "Document"}, {".pptx", "Document"}, {".xls", "Document"},
-        {".xlsx", "Document"}, {".ods", "Document"}, {".pdf", "Document"}
+        {".xlsx", "Document"}, {".ods", "Document"}
 
     };
 
@@ -136,10 +137,13 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
             if (!includeHidden && isHiddenPath(entry.path())) continue;
             if (logs) std::cout << entry.path() << std::endl;
 
-            std::string ext = entry.path().extension().string();
+            // Расширения файла
+            std::string ext = entry.path().extension().string(); // Расширения
+            // Приводим к нижнему регистру
             std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-            std::string type = extensions.count(ext) ? extensions.at(ext) : "Other";
+            // Получаем тип
+            std::string type = extensions.count(ext) ? extensions.at(ext) : "Other"; // Тип
 
             // Увелечения общих значений
             totalFiles++;                                               // Количество файлов
@@ -161,13 +165,46 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
     }
 
     // Сортировка
-    std::vector<std::pair<std::string, double>> sortedCounts;
-    for (const auto &[type, count] : fileCounts)
-        if (count) sortedCounts.emplace_back(type, (double)count / totalFiles * 100);
+    // Сбор всех данных в вектор
+    std::vector<falyzer::FileStats> stats;
+    for (const auto &[type, count] : fileCounts) {
+        falyzer::FileStats fs;
+        fs.type = type;
+        fs.count = count;
+        fs.size = sizeCounts.count(type) ? sizeCounts.at(type) : 0;
+        fs.lines = countLines && lineCounts.count(type) ? lineCounts.at(type) : 0;
+        fs.percent = totalFiles > 0 ? (double)count / totalFiles * 100.0 : 0.0;
+        stats.push_back(fs);
+    }
 
-    std::sort(sortedCounts.begin(), sortedCounts.end(),
-              [](const auto &a, const auto &b) { return a.second > b.second; });
+    // Компаратор для сортировки
+    auto cmp = [&](const falyzer::FileStats &a, const falyzer::FileStats &b) {
+        auto less = [&](auto x, auto y) { return sortSettings.isBigEnd ? x < y : x > y; };
+
+        switch (sortSettings.type)
+        {
+            case falyzer::SortType::NAME:
+                return less(b.type, a.type);
+            case falyzer::SortType::PERCENT:
+                return less(a.percent, b.percent);
+            case falyzer::SortType::COUNT:
+                return less(a.count, b.count);
+            case falyzer::SortType::SIZE:
+                return less(a.size, b.size);
+            case falyzer::SortType::LINES:
+                return less(a.lines, b.lines);
+        }
+        return false;
+    };
+
+    std::sort(stats.begin(), stats.end(), cmp);
+
+    // Подготовка данных для вывода (как раньше sortedCounts)
+    std::vector<std::pair<std::string, double>> sortedCounts;
+    for (const auto &s : stats) {
+        sortedCounts.emplace_back(s.type, s.percent);
+    }
 
     // Вывод аналитики
-    printAnalysis(folderStr, totalFiles, totalLines, totalSize, sortedCounts, fileCounts, lineCounts, sizeCounts, countLines, separator);
+    printAnalysis(folderStr, totalFiles, totalLines, totalSize, sortedCounts, fileCounts, lineCounts, sizeCounts, sortSettings, countLines, separator);
 }

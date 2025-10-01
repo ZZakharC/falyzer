@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "FileAnalyzer.hpp"
 
 /// @brief Конвертация размера
 /// @param bytes Размер в байтах
@@ -28,10 +29,11 @@ std::string formatSize(unsigned long long bytes);
  * @param totalFiles   Общее количество файлов в директории.
  * @param totalLines   Общее количество строк во всех файлах (учитывается, если countLines = true).
  * @param totalSize    Суммарный размер всех файлов в байтах.
- * @param sortedCounts Вектор пар {тип файла, процент}, отсортированный по убыванию процента.
+ * @param sortedCounts Отсортированный вектор.
  * @param fileCounts   Ассоциативный массив: {тип файла → количество файлов}.
  * @param lineCounts   Ассоциативный массив: {тип файла → количество строк}.
  * @param sizeCounts   Ассоциативный массив: {тип файла → общий размер в байтах}.
+ * @param sortSettings Настройки сортировки 
  * @param countLines   Флаг: если true — выводить количество строк; если false — без строк.
  * @param separator    Флаг: если true — печатать разделительные линии между строками таблицы.
  */
@@ -41,4 +43,5 @@ void printAnalysis(const std::string &folder, const unsigned long totalFiles,
                    const std::unordered_map<std::string, int> &fileCounts,
                    const std::unordered_map<std::string, int> &lineCounts,
                    const std::unordered_map<std::string, unsigned long long> &sizeCounts,
+                   const falyzer::SortSettings sortSettings,
                    bool countLines, bool separator);
