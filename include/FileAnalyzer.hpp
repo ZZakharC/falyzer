@@ -11,44 +11,13 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "color_terminal.h"
+#include "falyzer.hpp"
 #include <unordered_map>
 #include "locale.hpp"
 
-namespace falyzer {
-    // Тип сортировки
-    enum class SortType
-    {
-        NAME,    // По имени
-        PERCENT, // По % количеста файлов
-        COUNT,   // По количество файлов
-        SIZE,    // По размеру
-        LINES    // По количество строк
-    };
-
-    // Структура настроек
-    struct SortSettings
-    {
-        SortType type = SortType::PERCENT; // Тип сортировки
-        bool isBigEnd = 0;                 // Начинать сортировку с малого (0 нет 1 да)
-    };
-
-    // Структура для хранения итогов по каждому типу файлов
-    struct FileStats
-    {
-        std::string type;
-        int count;
-        unsigned long long size;
-        int lines;
-        double percent;
-    };
-}
-
 /// @brief Сбор аналитики файлов
-/// @param folderStr     Путь к папке
-/// @param includeHidden Учитывать ли скрытые файлы
-/// @param countLines    Подсчитывать ли строки
-/// @param separator     Выводить ли разделитель
-/// @param logs          Выводить ли логи
-/// @param sortSettings  Настройки сортировки
-void analyticsFiles(const std::string &folderStr, bool includeHidden, bool countLines, bool separator, bool logs, falyzer::SortSettings sortSettings);
+/// @param analyzerSitting    Настройки анализа
+/// @param printStatsSittings Настройки вывода статистики
+/// @param logs               Выводить ли логи
+void analyticsFiles(const falyzer::AnalyzerSitting &analyzerSitting,
+                    const falyzer::PrintStatsSittings &printStatsSittings, const bool logs);

@@ -23,6 +23,7 @@ struct Locale {
                 warn_unknown_mode,
                 warn_lines_method,
                 err_folder,
+                err_unknown_out_stats,
                 warn_failed_process,
                 no_file_in_folder,
                 analysis_in_folder_text,

@@ -17,8 +17,7 @@
 #include <unordered_map>
 #include <iomanip>
 #include <sstream>
-#include "../include/FileAnalyzer.hpp"
-#include "../include/PrintUtils.hpp"
+#include "../include/PrintStats.hpp"
 #include "../include/color_terminal.h"
 
 namespace fs = std::filesystem;
@@ -43,9 +42,9 @@ bool isHiddenPath(const fs::path &p) {
 }
 
 /// Сбор аналитики файлов
-void analyticsFiles(const std::string &folderStr, bool includeHidden, bool countLines, bool separator, bool logs, falyzer::SortSettings sortSettings)
+void analyticsFiles(const falyzer::AnalyzerSitting &analyzerSitting, const falyzer::PrintStatsSittings &printStatsSittings, const bool logs)
 {
-    fs::path folder(folderStr); // Рабочая директория
+    fs::path folder(analyzerSitting.path_folder); // Рабочая директория
 
     // Проверка директории
     if (!fs::exists(folder) || !fs::is_directory(folder))
@@ -123,20 +122,14 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
 
     };
 
-    std::unordered_map<std::string, int> fileCounts,                // Количество файлов
-                                         lineCounts;                // Количество строк
-    std::unordered_map<std::string, unsigned long long> sizeCounts; // Размер
-
-    unsigned long totalLines = 0,     // Всего строк
-                  totalFiles = 0;     // Всего файлов
-    unsigned long long totalSize = 0; // Общий размер всех файлов
+    falyzer::StatsType stats;
 
     for (auto &entry : fs::recursive_directory_iterator(folder, fs::directory_options::skip_permission_denied))
     {
         try
         {
             if (entry.is_directory()) continue;
-            if (!includeHidden && isHiddenPath(entry.path())) continue;
+            if (!analyzerSitting.includeHidden && isHiddenPath(entry.path())) continue;
 
             // Расширения файла
             std::string ext = entry.path().extension().string(); // Расширения
@@ -147,14 +140,14 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
             std::string type = extensions.count(ext) ? extensions.at(ext) : "Other"; // Тип
 
             // Увелечения общих значений
-            totalFiles++;                                                    // Количество файлов
-            totalSize += fs::file_size(entry.path());                      // Размер
-            if (countLines) totalLines += countFileLines(entry.path()); // Строки
+            stats.totalFiles++;                                                    // Количество файлов
+            stats.totalSize += fs::file_size(entry.path());                      // Размер
+            if (analyzerSitting.countLines) stats.totalLines += countFileLines(entry.path()); // Строки
             
             // Увелечения индивидуальных значений
-            fileCounts[type]++;
-            sizeCounts[type] += fs::file_size(entry.path());
-            if (countLines) lineCounts[type] += countFileLines(entry.path());
+            stats.fileCounts[type]++;
+            stats.sizeCounts[type] += fs::file_size(entry.path());
+            if (analyzerSitting.countLines) stats.lineCounts[type] += countFileLines(entry.path());
 
             // Вывод лога
             if (logs) std::cout << entry.path() << std::endl;
@@ -169,7 +162,7 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
     }
 
     // Проверка существования файлов в директории
-    if (totalFiles == 0)
+    if (stats.totalFiles == 0)
     {
         std::cerr << COLOR_BOLD << locale->no_file_in_folder << COLOR_RESET << std::endl;
         return;
@@ -177,22 +170,22 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
 
     // Сортировка
     // Сбор всех данных в вектор
-    std::vector<falyzer::FileStats> stats;
-    for (const auto &[type, count] : fileCounts) {
+    std::vector<falyzer::FileStats> fileStats;
+    for (const auto &[type, count] : stats.fileCounts) {
         falyzer::FileStats fs;
         fs.type = type;
         fs.count = count;
-        fs.size = sizeCounts.count(type) ? sizeCounts.at(type) : 0;
-        fs.lines = countLines && lineCounts.count(type) ? lineCounts.at(type) : 0;
-        fs.percent = totalFiles > 0 ? (double)count / totalFiles * 100.0 : 0.0;
-        stats.push_back(fs);
+        fs.size = stats.sizeCounts.count(type) ? stats.sizeCounts.at(type) : 0;
+        fs.lines = analyzerSitting.countLines && stats.lineCounts.count(type) ? stats.lineCounts.at(type) : 0;
+        fs.percent = stats.totalFiles > 0 ? (double)count / stats.totalFiles * 100.0 : 0.0;
+        fileStats.push_back(fs);
     }
 
     // Компаратор для сортировки
     auto cmp = [&](const falyzer::FileStats &a, const falyzer::FileStats &b) {
-        auto less = [&](auto x, auto y) { return sortSettings.isBigEnd ? x < y : x > y; };
+        auto less = [&](auto x, auto y) { return analyzerSitting.sortSettings.isBigEnd ? x < y : x > y; };
 
-        switch (sortSettings.type)
+        switch (analyzerSitting.sortSettings.type)
         {
             case falyzer::SortType::NAME:
                 return less(b.type, a.type);
@@ -208,14 +201,12 @@ void analyticsFiles(const std::string &folderStr, bool includeHidden, bool count
         return false;
     };
 
-    std::sort(stats.begin(), stats.end(), cmp);
+    std::sort(fileStats.begin(), fileStats.end(), cmp);
 
-    // Подготовка данных для вывода (как раньше sortedCounts)
-    std::vector<std::pair<std::string, double>> sortedCounts;
-    for (const auto &s : stats) {
-        sortedCounts.emplace_back(s.type, s.percent);
+    for (const auto &s : fileStats) {
+        stats.list.emplace_back(s.type, s.percent);
     }
 
     // Вывод аналитики
-    printAnalysis(folderStr, totalFiles, totalLines, totalSize, sortedCounts, fileCounts, lineCounts, sizeCounts, sortSettings, countLines, separator);
+    printAnalysis(stats, printStatsSittings, analyzerSitting);
 }

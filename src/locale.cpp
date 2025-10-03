@@ -24,6 +24,12 @@ Keys (flags):\n\
   [-l]                      Enables line counting in files (may significantly slow down the program).\n\n\
   [-s]                      Adds separators to the output table.\n\n\
   [--logs]                  Displays logs.\n\n\
+  [--out = <path_k_fail>]   Keep statistics to the specified file. \n\
+    Supported output formats: \n\
+      TEXT        regular text file (`<name_file>.txt`)\n\
+      JSON        data in json format (`<name_file>.json`)\n\
+      CSV         table in CSV format (`<name_file> .csv`)\n\
+      YAML        data in yaml format (`<name_file> .yaml`)\n\n\
   [--lang=<language>]       Sets the interface language.\n\
     Available languages:\n\
       en        English\n\
@@ -45,6 +51,7 @@ Keys (flags):\n\
       .warn_unknown_mode       = "[WARN] Unknown sort mode. Using 0 (descending) by default.",
       .warn_lines_method       = "[WARN] Row counting is disabled; sorting is not possible! Using percent-0 by default.",
       .err_folder              = "[ERROR] The specified folder does not exist or is not a directory.",
+      .err_unknown_out_stats   = "[ERROR] The specified path to output statistics is invalid. Use -h for assistance.",
       .warn_failed_process     = "[WARN] Failed to process ",
       .no_file_in_folder       = "There are no files in the specified folder.",
       .analysis_in_folder_text = "Analysis of files in the folder:",
@@ -68,6 +75,12 @@ Locale ru_locale =
   [-l]                       Включает счёт строк в файлах (может сильно замедлить программу).\n\n\
   [-s]                       Добавляет разделители в выводимую таблицу.\n\n\
   [--logs]                   Выводит логи.\n\n\
+  [--out=<путь_к_файлу>]     Сохранить статистику в указанный файл.\n\
+    Поддерживаемые форматы вывода:\n\
+      TEXT        обычный текстовый файл (`<имя_файла>.txt`)\n\
+      JSON        данные в формате JSON (`<имя_файла>.json`)\n\
+      CSV         таблица в формате CSV (`<имя_файла>.csv`)\n\
+      YAML        данные в формате YAML (`<имя_файла>.yaml`)\n\n\
   [--lang=<язык>]            Устанавливает язык интерфейса.\n\
     Доступные язык:\n\
       en        English\n\
@@ -85,10 +98,11 @@ Locale ru_locale =
     Режимы сортировки (<режим>):\n\
       0         по убыванию (от большего к меньшему)\n\
       1         по возрастанию (от меньшего к большему)",
-      .warn_unknown_method     = "[WARN] Неизвестный метод сортировки! Используется percent-0 по умолчанию.",
+      .warn_unknown_method     = "[WARN] Неизвестный метод сортировки. Используется percent-0 по умолчанию.",
       .warn_unknown_mode       = "[WARN] Неизвестный режим сортировки. Используется 0 (убывание) по умолчанию.",
       .warn_lines_method       = "[WARN] Подсчёт строк отключён их сортировка невозможна! Используется percent-0 по умолчанию.",
       .err_folder              = "[ERROR] Указанная папка не существует или это не директория.",
+      .err_unknown_out_stats   = "[ERROR] Указан неверный путь для вывода статистики. Используйте -h для помощи.",
       .warn_failed_process     = "[WARN] Не удалось обработать ",
       .no_file_in_folder       = "В указанной папке нет файлов.",
       .analysis_in_folder_text = "Анализ файлов в папке:",
@@ -107,19 +121,25 @@ Locale fr_locale =
     .for_help = " -h pour obtenir de l'aide.",
     .help = "\
 Options (flags):\n\
-  [-h | --help]              Affiche la liste des options.\n\n\
-  [-a]                       Inclut les fichiers cachés dans les statistiques.\n\n\
-  [-l]                       Active le comptage des lignes dans les fichiers (peut ralentir considérablement le programme).\n\n\
-  [-s]                       Ajoute des séparateurs au tableau de sortie.\n\n\
-  [--logs]                   Affiche les journaux.\n\n\
-  [--lang=<langue>]          Définit la langue de l'interface.\n\
+  [-h | --help]                 Affiche la liste des options.\n\n\
+  [-a]                          Inclut les fichiers cachés dans les statistiques.\n\n\
+  [-l]                          Active le comptage des lignes dans les fichiers (peut ralentir considérablement le programme).\n\n\
+  [-s]                          Ajoute des séparateurs au tableau de sortie.\n\n\
+  [--logs]                      Affiche les journaux.\n\n\
+  [--out=<chemin_vers_fichier>] Sauvegarde les statistiques dans le fichier indiqué.\n\
+    Formats de sortie pris en charge:\n\
+      TEXT        fichier texte ordinaire (`<nom_du_fichier>.txt`)\n\
+      JSON        données au format JSON (`<nom_du_fichier>.json`)\n\
+      CSV         tableau au format CSV (`<nom_du_fichier>.csv`)\n\
+      YAML        données au format YAML (`<nom_du_fichier>.yaml`)\n\n\
+  [--lang=<langue>]             Définit la langue de l'interface.\n\
     Langues disponibles:\n\
       en        English\n\
       fr        Français\n\
       de        Deutsch\n\
       ru        Русский\n\
       es        Español\n\n\
-  [--sort=<méthode>-<mode>]  Configure le tri des résultats. Par défaut, `percent-0` est utilisé.\n\
+  [--sort=<méthode>-<mode>]     Configure le tri des résultats. Par défaut, `percent-0` est utilisé.\n\
     Méthodes (<méthode>):\n\
       name      par nom du type de fichier (alphabétique)\n\
       percent   par pourcentage par rapport au nombre total de fichiers\n\
@@ -133,6 +153,7 @@ Options (flags):\n\
     .warn_unknown_mode       = "[WARN] Mode de tri inconnu. Utilisation de 0 (décroissant) par défaut.",
     .warn_lines_method       = "[WARN] Le comptage des lignes est désactivé ; le tri n'est pas possible ! Utilisation de percent-0 par défaut.",
     .err_folder              = "[ERROR] Le dossier spécifié n'existe pas ou n'est pas un répertoire.",
+    .err_unknown_out_stats   = "[ERROR] Le chemin d'accès spécifié pour les statistiques de sortie est invalide. Utilisez -h pour obtenir de l'aide.",
     .warn_failed_process     = "[WARN] Échec du traitement de ",
     .no_file_in_folder       = "Il n'y a aucun fichier dans le dossier spécifié.",
     .analysis_in_folder_text = "Analyse des fichiers dans le dossier :",
@@ -156,6 +177,12 @@ Optionen (Flags):\n\
   [-l]                       Aktiviert das Zählen von Zeilen in Dateien (kann das Programm erheblich verlangsamen).\n\n\
   [-s]                       Fügt Trenner in die Ausgabetabelle ein.\n\n\
   [--logs]                   Zeigt Protokolle an.\n\n\
+  [--out=<Pfad_zur_Datei>]   Speichert die Statistik in der angegebenen Datei.\n\
+    Unterstützte Ausgabeformate:\n\
+      TEXT        normale Textdatei (`<Dateiname>.txt`)\n\
+      JSON        Daten im JSON-Format (`<Dateiname>.json`)\n\
+      CSV         Tabelle im CSV-Format (`<Dateiname>.csv`)\n\
+      YAML        Daten im YAML-Format (`<Dateiname>.yaml`)\n\n\
   [--lang=<sprache>]         Legt die Sprache der Benutzeroberfläche fest.\n\
     Verfügbare Sprachen:\n\
       en        English\n\
@@ -177,6 +204,7 @@ Optionen (Flags):\n\
     .warn_unknown_mode       = "[WARN] Unbekannter Sortiermodus. Standardmäßig wird 0 (absteigend) verwendet.",
     .warn_lines_method       = "[WARN] Zeilenzählen ist deaktiviert; Sortierung nicht möglich! Standardmäßig wird percent-0 verwendet.",
     .err_folder              = "[ERROR] Der angegebene Ordner existiert nicht oder ist kein Verzeichnis.",
+    .err_unknown_out_stats   = "[ERROR] Der angegebene Pfad zur Ausgabe der Statistik ist ungültig. Verwenden Sie -h zur Unterstützung.",
     .warn_failed_process     = "[WARN] Verarbeitung fehlgeschlagen ",
     .no_file_in_folder       = "Im angegebenen Ordner befinden sich keine Dateien.",
     .analysis_in_folder_text = "Analyse der Dateien im Ordner:",
@@ -200,6 +228,12 @@ Opciones (flags):\n\
   [-l]                       Habilita el conteo de líneas en los archivos (puede ralentizar significativamente el programa).\n\n\
   [-s]                       Agrega separadores a la tabla de salida.\n\n\
   [--logs]                   Muestra registros.\n\n\
+  [--out=<ruta_al_archivo>]  Guarda las estadísticas en el archivo especificado.\n\
+    Formatos de salida soportados:\n\
+      TEXT        archivo de texto normal (`<nombre_del_archivo>.txt`)\n\
+      JSON        datos en formato JSON (`<nombre_del_archivo>.json`)\n\
+      CSV         tabla en formato CSV (`<nombre_del_archivo>.csv`)\n\
+      YAML        datos en formato YAML (`<nombre_del_archivo>.yaml`)\n\n\
   [--lang=<idioma>]          Establece el idioma de la interfaz.\n\
     Idiomas disponibles:\n\
       en        English\n\
@@ -221,6 +255,7 @@ Opciones (flags):\n\
     .warn_unknown_mode       = "[WARN] Modo de ordenación desconocido. Usando 0 (descendente) por defecto.",
     .warn_lines_method       = "[WARN] El conteo de líneas está deshabilitado; ¡la ordenación no es posible! Usando percent-0 por defecto.",
     .err_folder              = "[ERROR] La carpeta especificada no existe o no es un directorio.",
+    .err_unknown_out_stats   = "[ERROR] La ruta especificada para generar estadísticas no es válida. Use -h para obtener ayuda.",
     .warn_failed_process     = "[WARN] No se pudo procesar ",
     .no_file_in_folder       = "No hay archivos en la carpeta especificada.",
     .analysis_in_folder_text = "Análisis de archivos en la carpeta:",

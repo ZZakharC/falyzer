@@ -8,10 +8,15 @@
     You should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/.
 */
 
+#include <cstdio>
 #include <iostream>
 #include <ostream>
 #include "../include/FileAnalyzer.hpp"
+#include "../include/falyzer.hpp"
 #include "../include/locale.hpp"
+#include "../include/color_terminal.h"
+
+#define VERSION "Falyzer 1.0.0 lin x86_64"
 
 // Главная функция
 int main(int argc, char *argv[])
@@ -27,13 +32,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    std::string path_folder;                   // Путь к папке
-    bool includeHidden = false,                // Считывать скрытые файлы?
-         countLines = false,                   // Считать строки?
-         logs = false,                         // ВЫводить логи?
-         separator = false;                    // Выводить таблице с разделителем?
-    falyzer::SortSettings sortSettings;        // Настройки сортировки
-    std::string sortSettingsStr = "percent-0"; // Настройки сортировки (строка)
+    bool logs = false;                              // Включины логи?
+    falyzer::AnalyzerSitting analyzerSitting;       // Настройки анализатора
+    falyzer::PrintStatsSittings printStatsSittings; // Настройки вывода
 
     // Перебор аргументов
     for (int i = 1; i < argc; i++)
@@ -41,27 +42,74 @@ int main(int argc, char *argv[])
         std::string flag = argv[i]; // флаг
 
         // Вывод помощи
-        if (flag=="-h"||flag=="--help")
+        if (flag == "-h" || flag == "--help")
         {
             std::cout << locale->usage_text << locale->usage << "\n\n"
                       << locale->help << std::endl;
             return 0;
         }
+        // Версия
+        else if (flag == "-v" || flag == "--version")
+        {
+            std::cout << VERSION << std::endl;
+            return 0;
+        }
         
         // Скрытые файлы
-        if (flag == "-a") includeHidden = true;
+        if (flag == "-a") analyzerSitting.includeHidden = true;
         // Подсчёт строк
-        else if (flag == "-l") countLines = true;
+        else if (flag == "-l") analyzerSitting.countLines = true;
         // Логи
         else if (flag == "--logs") logs = true;
         // Разделитель
-        else if (flag == "-s") separator = true;
+        else if (flag == "-s") printStatsSittings.separator = true;
         // Язык
         else if (flag.rfind("--lang=", 0) == 0)
             set_lang(flag.substr(7));
         // Путь к папке для анализа
         else if (flag.rfind("--path=", 0) == 0)
-            path_folder = flag.substr(7);
+            analyzerSitting.path_folder = flag.substr(7);
+        // Сортировка
+        else if (flag.rfind("--out=", 0) == 0) 
+        { 
+            std::string file = flag.substr(6); // обрезаем "--out="
+            std::string ext;
+
+            // Установка типа сортировки
+            if (ext == "cout" || ext == "console") 
+            {
+                printStatsSittings.outStats = falyzer::OutputsStats::CONSOLE;
+                continue;
+            }
+
+            // Позиция расширения
+            size_t extPos = file.rfind('.');
+
+            if (extPos != std::string::npos)
+                ext   = file.substr(extPos + 1);
+            else
+            {
+                std::cerr << COLOR_RED << locale->err_unknown_out_stats << COLOR_RESET << std::endl;
+                return 1; 
+            }
+
+            if (ext == "txt") 
+                printStatsSittings.outStats = falyzer::OutputsStats::FILE_TEXT;
+            else if (ext == "scv") 
+                printStatsSittings.outStats = falyzer::OutputsStats::FILE_CSV;
+            else if (ext == "yaml") 
+                printStatsSittings.outStats = falyzer::OutputsStats::FILE_YAML;
+            else if (ext == "json") 
+                printStatsSittings.outStats = falyzer::OutputsStats::FILE_JSON;
+            else // Неопределено
+            {
+                std::cerr << COLOR_RED << locale->err_unknown_out_stats << COLOR_RESET << std::endl;
+                return 1;
+            }
+
+            // Путь к файлу
+            printStatsSittings.outStatsFilePath = file;
+        }
         // Сортировка
         else if (flag.rfind("--sort=", 0) == 0) 
         { 
@@ -84,53 +132,54 @@ int main(int argc, char *argv[])
 
             // Установка типа сортировки
             if (method == "name") 
-                sortSettings.type = falyzer::SortType::NAME;
+                analyzerSitting.sortSettings.type = falyzer::SortType::NAME;
             else if (method == "percent") 
-                sortSettings.type = falyzer::SortType::PERCENT;
+                analyzerSitting.sortSettings.type = falyzer::SortType::PERCENT;
             else if (method == "count") 
-                sortSettings.type = falyzer::SortType::COUNT;
+                analyzerSitting.sortSettings.type = falyzer::SortType::COUNT;
             else if (method == "size")
-                sortSettings.type = falyzer::SortType::SIZE;
+                analyzerSitting.sortSettings.type = falyzer::SortType::SIZE;
             else if (method == "lines")
-                sortSettings.type = falyzer::SortType::LINES;
+                analyzerSitting.sortSettings.type = falyzer::SortType::LINES;
             else // Неопределено
             {
                 std::cerr << COLOR_YELLOW << locale->warn_unknown_method << COLOR_RESET << std::endl;
                 continue;
             }
 
-            sortSettingsStr = method + '-' + mode; // Запись настроек в строку (для логов)
+            analyzerSitting.sortSettingsStr = method + '-' + mode; // Запись настроек в строку (для логов)
 
             // Установка режима сортировки
             if (mode == "0")      // Убывание
-                sortSettings.isBigEnd = false;
+                analyzerSitting.sortSettings.isBigEnd = false;
             else if (mode == "1") // Возрастание
-                sortSettings.isBigEnd = true;
+                analyzerSitting.sortSettings.isBigEnd = true;
             else                  // Неопределено
                 std::cerr << COLOR_YELLOW << locale->warn_unknown_mode << COLOR_RESET << std::endl;
         }
     }
 
     // Проверка настроек
-    if (sortSettings.type == falyzer::SortType::LINES && !countLines)
+    if (analyzerSitting.sortSettings.type == falyzer::SortType::LINES && !analyzerSitting.countLines)
     {
         std::cerr << COLOR_YELLOW << locale->warn_lines_method << COLOR_RESET;
-        sortSettings.type = falyzer::SortType::PERCENT;
-        sortSettings.isBigEnd = 0;
+        analyzerSitting.sortSettings.type = falyzer::SortType::PERCENT;
+        analyzerSitting.sortSettings.isBigEnd = 0;
     }
 
     // Вывод логов
     if (logs)
         std::cout << "Setting:\n"
-                  << " path folder: '" << path_folder << "'\n"
-                  << " includeHidden: " << includeHidden << '\n'
-                  << " countLines: " << countLines << '\n'
-                  << " separator: " << separator << '\n'
-                  << " sortSettings: " << sortSettingsStr << '\n'
+                  << " path folder: '"  << analyzerSitting.path_folder << "'\n"
+                  << " includeHidden: " << analyzerSitting.includeHidden << '\n'
+                  << " countLines: "    << analyzerSitting.countLines << '\n'
+                  << " separator: "     << printStatsSittings.separator << '\n'
+                  << " sortSettings: "  << analyzerSitting.sortSettingsStr << '\n'
+                  << " outStats: "      << printStatsSittings.outStatsStr << '\n'
                   << std::endl;
 
     // Аналитика
-    analyticsFiles(path_folder, includeHidden, countLines, separator, logs, sortSettings);
+    analyticsFiles(analyzerSitting, printStatsSittings, logs);
 
     return 0;
 }

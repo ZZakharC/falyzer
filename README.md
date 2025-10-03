@@ -32,6 +32,14 @@ It helps quickly extract useful information, automate processing, and integrate 
 
 ![Screenshot](screenshot/a5.png "Screenshot")
 
+---
+
+![Screenshot](screenshot/a6.png "Screenshot")
+
+---
+
+![Screenshot](screenshot/a7.png "Screenshot")
+
 
 ## 🖥️ Usage
 
@@ -46,6 +54,14 @@ falyzer --path=<folder_path> [keys]
 - `-l` — Counts lines in files (may significantly slow down the program).
 - `-s` — Adds separators in the output table.
 - `--logs` — Outputs logs.
+- `--out=<path_to_fail>` - retains statistics to the specified file. 
+
+  **Supported output formats:** 
+  - `TEXT` - a regular text file (`<name_file>.txt`) 
+  - `JSON` - Data in JSON format (`<name_fila>.json`) 
+  - `CSV` - table in CSV format (`<name_fila>.csv`) 
+  - `YAML` - data in YAML format (`<name_fila>.yaml`)
+
 - `--lang=<language>` — Sets the interface language. The default language is the system language.
   **Available languages**
   - `en` — English
@@ -123,6 +139,14 @@ falyzer --path=<folder_path> [keys]
 
 ![Screenshot](screenshot/a5.png "Screenshot")
 
+---
+
+![Screenshot](screenshot/a6.png "Screenshot")
+
+---
+
+![Screenshot](screenshot/a7.png "Screenshot")
+
 
 
 ## 🖥️Использования
@@ -136,6 +160,14 @@ falyzer --path=<путь_к_папке> [ключи]
 - `-l` - Включает счёт строк в файлах (может сильно замедлить программу).
 - `-s` - Добавляет разделители в выводимую таблицу.
 - `--logs` - Выводит логи.
+- `--out=<путь_к_файлу>` — сохраняет статистику в указанный файл.
+
+  **Поддерживаемые форматы вывода:**
+  - `TEXT` — обычный текстовый файл (`<имя_файла>.txt`)
+  - `JSON` — данные в формате JSON (`<имя_файла>.json`)
+  - `CSV` — таблица в формате CSV (`<имя_файла>.csv`)
+  - `YAML` — данные в формате YAML (`<имя_файла>.yaml`)
+
 - `--lang=<язык>` - Устанавливает язык интерфейса. По умолчанию используется язык системы
 
   **Доступные языки**
