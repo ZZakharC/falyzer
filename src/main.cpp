@@ -16,7 +16,8 @@
 #include "../include/locale.hpp"
 #include "../include/color_terminal.h"
 
-#define VERSION "Falyzer 1.0.0 lin x86_64"
+#define VERSION "Falyzer 1.0.0"
+// #define ARCH    "linux x86_64"
 
 // Главная функция
 int main(int argc, char *argv[])
@@ -176,6 +177,7 @@ int main(int argc, char *argv[])
                   << " separator: "     << printStatsSittings.separator << '\n'
                   << " sortSettings: "  << analyzerSitting.sortSettingsStr << '\n'
                   << " outStats: "      << printStatsSittings.outStatsStr << '\n'
+                  << " ignoreFile: "    << analyzerSitting.ignoreFile << '\n'
                   << std::endl;
 
     // Аналитика

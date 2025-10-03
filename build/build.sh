@@ -14,6 +14,11 @@ mkdir -p "$BIN_DIR"
 VERSION="1.0.0"
 NAME="falyzer"
 
+# Компилятор
+CC="g++" # GCC можно Clang
+LD="g++"
+FLAGS_CC="-std=c++20"
+FLAGS_LD="-std=c++20"
 PATH_BIN=$BIN_DIR"/"$NAME
 
 # Цвета
@@ -30,12 +35,12 @@ for file in $C_FILES; do
     BASENAME=$(basename "$file" .cpp)
     OBJ_FILE="$BIN_DIR/$BASENAME.o"
     echo -e "${BLUE}Компиляция: $file -> $OBJ_FILE${NC}"
-    g++ -std=c++17 -c "$file" -o "$OBJ_FILE"
+    $CC $FLAGS_CC -c "$file" -o "$OBJ_FILE"
     OBJ_FILES="$OBJ_FILES $OBJ_FILE"
 done
 
 echo -e "${PURPLE}Линковка -> $PATH_BIN${NC}"
-g++ -std=c++20 $OBJ_FILES -o $PATH_BIN
+$LD $FLAGS_LD $OBJ_FILES -o $PATH_BIN
 
 # === Старт ===
-echo -e "${GREEN}Программа успешно собрана и находится по адрусу \"${PATH_BIN}\" ${NC}"
+echo -e "${GREEN}Программа успешно собрана и находится по адресу \"${PATH_BIN}\" ${NC}"

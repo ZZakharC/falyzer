@@ -45,6 +45,7 @@ namespace falyzer {
     struct AnalyzerSitting 
     {
         std::string path_folder;                   // Путь к папке
+        std::string ignoreFile = ".falyzerignore"; // Путь к файлу исключений
         bool includeHidden = false,                // Считывать скрытые файлы?
              countLines = false;                   // Считать строки?
         falyzer::SortSettings sortSettings;        // Настройки сортировки
@@ -73,7 +74,7 @@ namespace falyzer {
         unsigned long totalFiles,                                 // Всего файлов
                       totalLines;                                 // Всего строк
         unsigned long long totalSize;                             // Общий вес
-        std::vector<std::pair<std::string, double>> list; // Отсортированный список
+        std::vector<std::pair<std::string, double>> list;         // Отсортированный список
         std::unordered_map<std::string, int> fileCounts,          // Количество файлов (о. типа)
                                              lineCounts;          // Количество строк (в файле о. типа)
         std::unordered_map<std::string, unsigned long long> sizeCounts; // Вес файла (о. типа)

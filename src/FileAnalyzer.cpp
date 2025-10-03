@@ -13,14 +13,12 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
-#include <map>
 #include <unordered_map>
-#include <iomanip>
-#include <sstream>
 #include "../include/PrintStats.hpp"
 #include "../include/color_terminal.h"
 
 namespace fs = std::filesystem;
+
 
 // Подсчёт строк
 int countFileLines(const fs::path &file)
@@ -31,15 +29,105 @@ int countFileLines(const fs::path &file)
                                        std::istreambuf_iterator<char>(), '\n'));
 }
 
+
 // Проверка скрытый ли файл
-bool isHiddenPath(const fs::path &p) {
-    for (const auto &part : p) {
+bool isHiddenPath(const fs::path &p)
+{
+    for (const auto &part : p)
+    {
         std::string name = part.string();
         if (name == "." || name == "..") continue;
         if (!name.empty() && name[0] == '.') return true;
     }
+
     return false;
 }
+
+
+// Загрузка списка исключений из файла
+std::vector<std::string> loadIgnorePatterns(const fs::path &ignoreFile) {
+    std::vector<std::string> patterns; // Список исключений 
+    std::ifstream in(ignoreFile);     // Открытия файлы 
+    if (!in.is_open()) return patterns;
+
+    std::string line;
+    while (std::getline(in, line)) 
+    {
+        // Пропускаем пустые строки и комментарии
+        line.erase(0, line.find_first_not_of(" \t"));
+        if (line.empty() || line[0] == '#') continue;
+        patterns.push_back(line);
+    }
+
+    in.close();
+    return patterns;
+}
+
+
+/// Функция для проверки строки на соответствие шаблону с поддержкой '*' и '?'
+bool matchesPattern(const std::string &str, const std::string &pattern)
+{
+    size_t i = 0, j = 0;
+
+    while (i < str.size() && j < pattern.size())
+    {
+        if (pattern[j] == '*')
+        {
+            // Если '*' последний символ шаблона — всё, что осталось в str подходит
+            if (j + 1 == pattern.size()) return true;
+
+            // Иначе проверяем все возможные позиции для соответствия оставшейся части шаблона
+            for (size_t k = i; k <= str.size(); ++k)
+            {
+                if (matchesPattern(str.substr(k), pattern.substr(j + 1)))
+                    return true;
+            }
+            return false; // ни одна позиция не подошла
+        } 
+        else if (pattern[j] == '?' || str[i] == pattern[j])
+        {
+            // '?' совпадает с любым одним символом или точное совпадение
+            ++i;
+            ++j;
+        } 
+        else // Несовпадение символов
+            return false;
+    }
+
+    // Пропускаем оставшиеся '*' в шаблоне
+    while (j < pattern.size() && pattern[j] == '*') ++j;
+
+    // Строка подходит, если достигнут конец строки и шаблона
+    return i == str.size() && j == pattern.size();
+}
+
+
+/// Проверка, должен ли путь игнорироваться, учитывая директории
+bool isIgnored(const fs::path &file, const std::vector<std::string> &patterns)
+{
+    const std::string pathStr = file.string();
+    const std::string filename = file.filename().string();
+
+    for (const auto &pattern : patterns)
+    {
+        fs::path p = file;
+    
+        if (matchesPattern(pathStr, pattern) || matchesPattern(filename, pattern))
+            return true;
+    
+        while (!p.empty())
+        {
+            if (matchesPattern(p.lexically_normal().string(), fs::path(pattern).lexically_normal().string()))
+                return true;
+
+            p = p.parent_path(); // поднимаемся на уровень выше
+        }
+    }
+
+    return false;
+}
+
+
 
 /// Сбор аналитики файлов
 void analyticsFiles(const falyzer::AnalyzerSitting &analyzerSitting, const falyzer::PrintStatsSittings &printStatsSittings, const bool logs)
@@ -122,43 +210,62 @@ void analyticsFiles(const falyzer::AnalyzerSitting &analyzerSitting, const falyz
 
     };
 
+    auto ignorePatterns = loadIgnorePatterns(analyzerSitting.ignoreFile);
     falyzer::StatsType stats;
+    
+    try {
+        for (auto it = fs::recursive_directory_iterator(folder, fs::directory_options::skip_permission_denied);
+            it != fs::recursive_directory_iterator(); ++it)
+        {
+            try {
+                auto &entry = *it;
 
-    for (auto &entry : fs::recursive_directory_iterator(folder, fs::directory_options::skip_permission_denied))
+                // Пропуск
+                if (entry.is_directory()      || // Если дириктория 
+                    entry.is_symlink()        || // Если ссылка 
+                    entry.is_character_file() || // Если символьные устройства
+                    (!analyzerSitting.includeHidden && isHiddenPath(entry.path())) ||
+                    isIgnored(entry.path(), ignorePatterns))  continue;
+                    
+                    if (!analyzerSitting.includeHidden)
+                        if (isHiddenPath(entry.path()))
+                            continue;
+
+                // Расширения файла
+                std::string ext = entry.path().extension().string(); // Расширения
+                // Приводим к нижнему регистру
+                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+                // Получаем тип
+                std::string type = extensions.count(ext) ? extensions.at(ext) : "Other"; // Тип
+
+                unsigned int lines = 0;
+                unsigned long long size = fs::file_size(entry.path());
+
+                // Проверка включен ли подсчёт строк
+                if (analyzerSitting.countLines)
+                    countFileLines(entry.path());
+
+                // Увелечения общих значений
+                stats.totalFiles++;                                        // Количество файлов
+                stats.totalSize += size;                                   // Размер
+                if (analyzerSitting.countLines) stats.totalLines += lines; // Строки
+                
+                // Увелечения индивидуальных значений
+                stats.fileCounts[type]++;
+                stats.sizeCounts[type] += size;
+                if (analyzerSitting.countLines) stats.lineCounts[type] += lines;
+
+                // Вывод лога
+                if (logs) std::cout << "[LOGS]: " << entry.path() << std::endl;
+            } catch (const fs::filesystem_error &e) {
+                std::cerr << COLOR_YELLOW << "[WARN]: " << e.what() << COLOR_RESET << "\n";
+            }
+        }
+    } catch (const fs::filesystem_error &e)
     {
-        try
-        {
-            if (entry.is_directory()) continue;
-            if (!analyzerSitting.includeHidden && isHiddenPath(entry.path())) continue;
-
-            // Расширения файла
-            std::string ext = entry.path().extension().string(); // Расширения
-            // Приводим к нижнему регистру
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-            // Получаем тип
-            std::string type = extensions.count(ext) ? extensions.at(ext) : "Other"; // Тип
-
-            // Увелечения общих значений
-            stats.totalFiles++;                                                    // Количество файлов
-            stats.totalSize += fs::file_size(entry.path());                      // Размер
-            if (analyzerSitting.countLines) stats.totalLines += countFileLines(entry.path()); // Строки
-            
-            // Увелечения индивидуальных значений
-            stats.fileCounts[type]++;
-            stats.sizeCounts[type] += fs::file_size(entry.path());
-            if (analyzerSitting.countLines) stats.lineCounts[type] += countFileLines(entry.path());
-
-            // Вывод лога
-            if (logs) std::cout << entry.path() << std::endl;
-        }
-        // Обработка ошибок
-        catch (const fs::filesystem_error &e)
-        {
-            std::cerr << COLOR_YELLOW << locale->warn_failed_process
-                      << entry.path() << " (" << e.what() << ")\n" << COLOR_RESET;
-            continue;
-        }
+        std::cerr << COLOR_RED << "[ERROR] iterating folder: " << e.what() << COLOR_RESET << "\n";
+        return;
     }
 
     // Проверка существования файлов в директории
@@ -175,8 +282,8 @@ void analyticsFiles(const falyzer::AnalyzerSitting &analyzerSitting, const falyz
         falyzer::FileStats fs;
         fs.type = type;
         fs.count = count;
-        fs.size = stats.sizeCounts.count(type) ? stats.sizeCounts.at(type) : 0;
-        fs.lines = analyzerSitting.countLines && stats.lineCounts.count(type) ? stats.lineCounts.at(type) : 0;
+        fs.size = stats.sizeCounts[type];
+        fs.lines = analyzerSitting.countLines && stats.sizeCounts[type];
         fs.percent = stats.totalFiles > 0 ? (double)count / stats.totalFiles * 100.0 : 0.0;
         fileStats.push_back(fs);
     }

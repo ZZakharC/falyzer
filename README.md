@@ -86,12 +86,28 @@ falyzer --path=<folder_path> [keys]
   - `1` — ascending (from smaller to larger)
 
 
+### Exceptions to statistics
+
+In **Falyzer**, you can set a list of exceptions — files or folders that will not be taken into account during analysis.
+
+To do this, create a `.falyzerignore` file in the directory from which Falyzer is launched.
+<!-- If necessary, you can specify another file by passing its path through the `--ignore=<path to file>` parameter. -->
+
+Example of the contents of the exception file:
+
+```
+.git
+*.cpp
+*.txt
+```
+
+
 ## 🚀 Features
 
 - Support for various file types.
 - Flexible analysis settings tailored to tasks.
 - Easy integration into existing projects.
-- Extensible architecture (you can add your own analysis modules).
+- Extensible architecture.
 
 
 ## 🛠 Installation
@@ -107,6 +123,8 @@ falyzer --path=<folder_path> [keys]
    ```bash
    ./build/build.sh
    ```
+   > ⚠ Building requires GCC or Clang version **12 or higher**.  
+   > By default, g++ is used, but you can also build with clang++.
 3. **Done**
    The executable is now located at `build/bin/falyzer`.
    
@@ -192,12 +210,28 @@ falyzer --path=<путь_к_папке> [ключи]
     - `1`       — по возрастанию (от меньшего к большему)  
 
 
+### Исключения из статистики
+
+В **Falyzer** можно задать список исключений — файлов или папок, которые не будут учитываться при анализе.
+
+Для этого создайте файл `.falyzerignore` в директории, из которой запускается Falyzer.
+<!-- При необходимости можно указать другой файл, передав его путь через параметр `--ignore=<путь_к_файлу>`. -->
+
+Пример содержимого файла исключений:
+
+```
+.git
+*.cpp
+*.txt
+```
+
+
 
 ## 🚀 Возможности
 - Поддержка различных типов файлов.
 - Гибкая настройка анализа под задачи.
 - Простое подключение к существующим проектам.
-- Расширяемая архитектура (можно добавлять свои модули анализа).
+- Расширяемая архитектура.
 
 
 
@@ -209,6 +243,10 @@ falyzer --path=<путь_к_папке> [ключи]
 2. **Собирите программу запустив:**
     ```bash
     ./build/build.sh
+    ```
+    > ⚠ Для сборки требуется `GCC` или `Clang` версии **12 или выше**.  
+    > По умолчанию используется `g++`, но можно также собрать через `clang++`.
+
 3. **Готово**  
   Теперь исполняемый файл находится `build/bin/falyzer`.
   
